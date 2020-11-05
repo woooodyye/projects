@@ -1,0 +1,65 @@
+function img = jointbilat(img_A,img_F,s,sigma,tau)
+    w = size(img_A,1);
+    h = size(img_A,2);
+    img = zeros(size(img_A));
+    
+    for k = 1:3    
+       for i = 1+s : w-s
+           for j = 1+s : h - s
+                [intense,spatial= create_kernel(img_F(:,:,k),i,j,s,sigma);
+                spatai
+                I_f = filter(img_A(i,j),sigma,tau,intense,spatial);
+                img(i,j,k) = I_f;
+           end
+       end
+    end
+    
+end
+
+
+function kernel = create_kernel(img,i,j,s,sigma,type)
+    w = size(img,1);
+    h = size(img,2);
+    a_s = i - floor(s/2);
+    a_e = i + floor(s/2);
+    b_s = j - floor(s/2);
+    b_e = j + floor(s/2);
+    a_s = max(1,a_s);
+    a_e = min(a_e,w);
+    b_s = max(1,b_s);
+    b_e = min(b_e,h);
+    
+    h = fspecial('gaussian', s,sigma);
+    %take part of the gaussian;
+    
+    if type == "intensity"
+        img_s = img(a_s:a_e, b_s : b_e);
+        kernel = h.* (img_s - img(i,j));
+    else
+       bw = zeros(size(h));
+       
+       bw(ceil(s/2),ceil(s/2)) = 1;
+       
+       D = bwdist(bw);
+       kernel = h .* D;
+    end
+end
+
+
+function I_f = filter(I,f,g,intensity,spatial)
+    %change the irradiance value at a pixel by doing bilateral
+    %filtering in the kernel
+    %i guess for convenience, I will just have a kernel that has values
+    a= f.*spatial .* g .* intensity;
+    
+    b =f.*spatial .* g .* intensity .* I;
+    
+    k_s = sum(reshape(a,[],1));
+    I_sum =  sum(reshape(b,[],1));
+    I_f = I_sum ./ k_s;
+end
+
+
+    
+    
+    

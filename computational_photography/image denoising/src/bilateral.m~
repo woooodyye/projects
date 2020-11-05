@@ -1,0 +1,112 @@
+
+
+%%implement bilateral filtering
+%size shoud be even?
+function img_f = bilateral(img,s,sigma_r,sigma_d)
+    %need to create a new img,else the value get modified in the loop
+    w = size(img,1);
+    h = size(img,2);
+    img_f = zeros(size(img));
+    
+    for i= 1:w
+        for j = 1:h
+            intensity = create_kernel(img,i,j,s,sigma_r,"intensity");
+            spatial = create_kernel(img,i,j,s,sigma_d, "spatial");
+            I_f = filter(I,intensity,spatial);
+            img_f(i,j,:) = I_f;
+        end
+    end
+end
+
+
+function kernel = create_kernel(img,i,j,s,type)
+    w = size(img,1);
+    h = size(img,2);
+    a_s = i - floor(s/2);
+    a_e = i + floor(s/2);
+    b_s = j - floor(s/2);
+    b_e = j + floor(s/2);
+    a_s = max(1,a_s);
+    a_e = min(a_e,w);
+    b_s = max(1,b_s);
+    b_e = min(b_e,h);
+    
+    if type == "intensity"
+        I = 
+        kernel = ;
+    else
+
+        a = (a_s:a_e)';
+        b = b_s:b_e;
+        
+        kernel = zeros(a_e-a_s, b_e - b_s);
+%         kernel = zeros(size(a,2),size(b,2));
+        kernel( a-(a_s-1) , b-(b_s-1) ) = (sqrt( abs(a-i) + abs(b-j) ));
+    end
+end
+
+
+function I_f = filterAll(img,i,j,f,g,s)
+    w = size(img,1);  h = size(img,2);
+    a_s = i - floor(s/2);  a_e = i + floor(s/2);
+    b_s = j - floor(s/2);  b_e = j + floor(s/2);
+    a_s = max(1,a_s);  a_e = min(a_e,w);
+    b_s = max(1,b_s);  b_e = min(b_e,h);
+    
+    k_g = img(a_s:a_e, b_s: b_e);
+    k_s = img()
+   
+end
+
+function I_f = filter(I,intensity,spatial)
+    %change the irradiance value at a pixel by doing bilateral
+    %filtering in the kernel
+    %i guess for convenience, I will just have a kernel that has values
+    a= spatial .* intensity;
+    
+    b = spatial .* intensity .* I;
+    
+    k_s = sum(reshape(a,[],1));
+    I_sum =  sum(reshape(b,[],1));
+    I_f = I_sum ./ k_s;
+end
+
+
+
+%joint bilateral filtering 
+function img = joint_bilat(img_A,img_F,size)
+    w = size(img_A,1);
+    h = size(img_A,2);
+    img = zeros(size(img_A));
+    i = (1:w)';
+    j = 1:h;
+    kernel = create_kernel(img_F,i,j,size);
+    spatial = create_kernel(img_A,i,j,size);
+    I_f = filter(img_A(i,j),f,g,kernel,spatial);
+    img(i,j) = I_f;
+end
+
+
+function img_D = detail_tf(img_F,img_jb,size) 
+    F_base = bilateral_filter(img_F,size);
+    eps = 0.001;
+    img_D = img_jb .* (img_F + eps) ./ (F_base + eps);
+end
+
+
+function M = mask(img_A, img_F, tau_s)
+    M_shadow = zeros(size(img_A));
+    M_shadow(img_F - img_A <= tau_s ) = 1;
+    M_flash = zeros(size(img_A));
+    %because img_F is normalized.
+    M_flash(img_F>0.95) = 1;
+    
+    M = M_shadow | M_flash;
+end
+
+
+function img_final = bilate_mask(img_d, img_b, M)
+    img_final = (1 - M) .* img_d + M.* img_b;
+end
+
+
